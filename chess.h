@@ -80,8 +80,9 @@ class Chess {
 		bool straightAttack(bool side, S8 sq, U8 dir) const;
 		bool diagAttack(bool side, S8 sq, U8 dir) const;
 
-		void addMove(std::vector<smove>& v, const U8 &from, const U8 &to, S8 flags = 0, const U8& capture = 0) const;
+		void addMove(std::vector<smove>& v, const U8 &from, const U8 &to, const S8 &flags = 0, const U8& capture = 6) const;
 		std::vector<smove> genPseudoLegalMoves() const;
+		std::vector<smove> genLegalMoves();
 
 		void show() const;
 		U8 pieceAt(S8 sq) const;
@@ -98,7 +99,7 @@ class Chess {
 
 		bool sideToMove;
 
-		bool castlingRights;
+		S8 castlingRights;
 
 		int materialCount;
 		int moveCount;

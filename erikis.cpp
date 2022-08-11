@@ -16,6 +16,7 @@ Erikis::Erikis(QWidget *parent)
     createBoard();
     genIcons(0);
     getPossibleMoves();
+    this->displayPieces();
 }
 
 Erikis::~Erikis()
@@ -92,7 +93,8 @@ void Erikis::displayPieces() {
 }
 
 void Erikis::getPossibleMoves() {
-    this->possibleMoves = this->board.genPseudoLegalMoves();
+//    this->possibleMoves = this->board.genPseudoLegalMoves();
+    this->possibleMoves = this->board.genLegalMoves();
 }
 
 void Erikis::showPossibleMoves() {
@@ -148,6 +150,7 @@ void Erikis::squareClicked(int sq) {
         }
 
         if (possible) {
+
             if(isPromotion(possibleMoves[i])) {
                 int choice = getPromotion();
                 i += choice;
@@ -159,11 +162,12 @@ void Erikis::squareClicked(int sq) {
             this->getPossibleMoves();
 
             prev = -1;
+
+            displayPieces();
         } else {
             prev = sq;
             resetBoardColor();
             showPossibleMoves();
         }
     }
-    displayPieces();
 }

@@ -16,8 +16,8 @@ const int PROMOTION_FLAG = 64;
 
 const int CASTLE_WK = 1;
 const int CASTLE_WQ = 2;
-const int CASTLE_BK = 3;
-const int CASTLE_BQ = 4;
+const int CASTLE_BK = 4;
+const int CASTLE_BQ = 8;
 
 const S8 PAWN_DIRECTION[2] = {16, -16};
 const U8 PAWN_START_ROW[2] = {1, 6};
@@ -69,7 +69,6 @@ char ascci_piece[7][3] = {
 
 
 bool isPromotion(smove move) {
-	std::cout << "a " << int(move.flags & PROMOTION_FLAG) << "\n";
 	return move.flags & PROMOTION_FLAG;
 }
 
@@ -158,10 +157,10 @@ void Chess::loadFEN(std::string FEN) {
     castlingRights = 0;
     for(; FEN[i] != ' '; i++) {
         switch(FEN[i]) {
-            case 'K': castlingRights &= CASTLE_WK; break;
-            case 'k': castlingRights &= CASTLE_BK; break;
-            case 'Q': castlingRights &= CASTLE_WQ; break;
-            case 'q': castlingRights &= CASTLE_BQ; break;
+            case 'K': castlingRights |= CASTLE_WK; break;
+            case 'k': castlingRights |= CASTLE_BK; break;
+            case 'Q': castlingRights |= CASTLE_WQ; break;
+            case 'q': castlingRights |= CASTLE_BQ; break;
         };
     }
 
@@ -242,18 +241,24 @@ void Chess::makeMove(smove move) {
         }
     }
 
+	if (piece[move.to] == PAWN && (abs(move.from - move.to) == 32))
+		enPassantSquare = (move.from + move.to) / 2;
+
     // promotion
-    if (move.flags & PROMOTION_FLAG) {
-        if (move.flags & PROMOTION_KNIGHT_FLAG)
-            fillSq(!this->sideToMove, KNIGHT, move.to);
-        if (move.flags & PROMOTION_BISHOP_FLAG)
-            fillSq(!this->sideToMove, BISHOP, move.to);
-        if (move.flags & PROMOTION_QUEEN_FLAG)
-            fillSq(!this->sideToMove, QUEEN, move.to);
+	if (move.flags & PROMOTION_FLAG) {
+		if (move.flags & PROMOTION_KNIGHT_FLAG)
+			fillSq(!this->sideToMove, KNIGHT, move.to);
+		if (move.flags & PROMOTION_BISHOP_FLAG)
+			fillSq(!this->sideToMove, BISHOP, move.to);
+		if (move.flags & PROMOTION_QUEEN_FLAG)
+			fillSq(!this->sideToMove, QUEEN, move.to);
     }
 
+	// keeping track of whree the king is
+	if (piece[move.to] == KING)
+		king[!sideToMove] = move.to;
+
     moveCount++;
-    // moves[moveCount] = move;
 }
 
 void Chess::unmakeMove(smove move) {
@@ -300,13 +305,13 @@ void Chess::unmakeMove(smove move) {
     this->castlingRights = move.castling_flags;
 
     // undo en passant
-    if (move.flags & EP_FLAG) {
+	if (move.flags & EP_FLAG) {
         if (this->sideToMove == WHITE) {
             fillSq(BLACK, PAWN, move.to - 16);
         } else {
             fillSq(WHITE, PAWN, move.to + 16);
         }
-  }
+	}
 };
 
 bool Chess::isAttacked(bool side, S8 sq) const {
@@ -368,7 +373,7 @@ bool Chess::straightAttack(bool side, S8 sq, U8 dir) const {
 	U8 to = sq + dir;
 	while(!(to & 0x88)) {
 		if(color[to] != COLOR_EMPTY) {
-			if(color[to] == side && (piece[to] == QUEEN || piece[to] == BISHOP))
+			if(color[to] == side && (piece[to] == QUEEN || piece[to] == ROOK))
 				return 1;
 			return 0;
 		}
@@ -390,7 +395,7 @@ bool Chess::diagAttack(bool side, S8 sq, U8 dir) const {
 	return 0;
 }
 
-void Chess::addMove(std::vector<smove>& v, const U8 &from, const U8 &to, S8 flags, const U8& capture) const {
+void Chess::addMove(std::vector<smove>& v, const U8 &from, const U8 &to, const S8 &flags, const U8& capture) const {
 	v.push_back({from, to, flags, this->castlingRights, capture, this->enPassantSquare, this->withoutCaptureCount});
 }
 
@@ -432,8 +437,17 @@ std::vector<smove> Chess::genPseudoLegalMoves() const {
 					// captures
 					for (const S8 &d : {1, -1}) {
 						S8 newTo = to+d;
-						if(!(newTo & 0x88) && piece[newTo] != EMPTY)
-							this->addMove(pseudoLegalMoves, sq, newTo, 0, piece[newTo]);
+						if(!(newTo & 0x88) && piece[newTo] != EMPTY && color[newTo] == !sideToMove) {
+							if(rowOfSq(newTo) == PAWN_PROMOTION_ROW[sideToMove]) {
+								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_KNIGHT_FLAG);
+								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_BISHOP_FLAG);
+								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_ROOK_FLAG);
+								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_QUEEN_FLAG);
+
+							} else {
+								this->addMove(pseudoLegalMoves, sq, newTo, 0, piece[newTo]);
+							}
+						}
 						else if (enPassantSquare == newTo)
 							this->addMove(pseudoLegalMoves, sq, newTo, EP_FLAG);
 					}
@@ -510,6 +524,20 @@ std::vector<smove> Chess::genPseudoLegalMoves() const {
 	return pseudoLegalMoves;
 }
 
+std::vector<smove> Chess::genLegalMoves() {
+	std::vector<smove> pseudoLegalMoves = genPseudoLegalMoves();
+	std::vector<smove> legalMoves;
+
+	for (smove move : pseudoLegalMoves) {
+		makeMove(move);
+		if (!isAttacked(sideToMove, king[!sideToMove])) {
+			legalMoves.push_back(move);
+		}
+		unmakeMove(move);
+	}
+
+	return legalMoves;
+}
 
 void Chess::show() const {
     for (S8 row = 7; row >= 0; row--) {
