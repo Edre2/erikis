@@ -10,3 +10,7 @@ Go to the `erikis` folder and run :
 ``` bash
 qmake && make
 ```
+To run the program, just run the following :
+``` bash
+./erikis
+```
