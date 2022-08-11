@@ -2,6 +2,7 @@
 
 
 const int INF = 10000;
+const int INFINF = 100000;
 // const int NB_MOVES_MEMORY = 1024;
 
 const std::string START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -48,13 +49,143 @@ const S8 MOVES[6][8] = {
 
 
 const int PIECE_VALUE[7][3] = {
-    {1, -1, 0},
-    {3, -3, 0},
-    {3, -3, 0},
-    {5, -5, 0},
-    {9, -9, 0},
+    {100, -100, 0},
+    {325, -325, 0},
+    {335, -335, 0},
+    {500, -500, 0},
+    {975, -975, 0},
     {0, 0, 0},
     {0, 0, 0}
+};
+// by : piece, color, square
+// for middle game
+const S8 PIECE_VALUE_SQUARE[6][2][128] = {
+    // pawn
+    {
+        // white
+        {0,   0,   0,   0,   0,   0,   0,   0,  0,0,0,0,0,0,0,0,
+        -6,  -4,   1, -24, -24,   1,  -4,  -6,  0,0,0,0,0,0,0,0,
+        -4,  -4,   1,   5,   5,   1,  -4,  -4,  0,0,0,0,0,0,0,0,
+        -6,  -4,   5,  10,  10,   5,  -4,  -6,  0,0,0,0,0,0,0,0,
+        -6,  -4,   2,   8,   8,   2,  -4,  -6,  0,0,0,0,0,0,0,0,
+        -6,  -4,   1,   2,   1,   1,  -4,  -6,  0,0,0,0,0,0,0,0,
+        -6,  -4,   1,   1,   1,   1,  -4,  -6,  0,0,0,0,0,0,0,0,
+         0,   0,   0,   0,   0,   0,   0,   0,  0,0,0,0,0,0,0,0},
+        // black
+        {0,   0,   0,   0,   0,   0,   0,   0,  0,0,0,0,0,0,0,0,
+         6,   4,  -1,  -1,  -1,  -1,   4,   6,  0,0,0,0,0,0,0,0,
+         6,   4,  -1,  -2,  -2,  -1,   4,   6,  0,0,0,0,0,0,0,0,
+         6,   4,  -2,  -8,  -8,  -2,   4,   6,  0,0,0,0,0,0,0,0,
+         6,   4,  -5, -10, -10,  -5,   4,   6,  0,0,0,0,0,0,0,0,
+         4,   4,  -1,  -5,  -5,  -1,   4,   4,  0,0,0,0,0,0,0,0,
+         6,   4,  -1,  24,  24,  -1,   4,   6,  0,0,0,0,0,0,0,0,
+         0,   0,   0,   0,   0,   0,   0,   0,  0,0,0,0,0,0,0,0}
+    },
+    // knight
+    {
+        // white
+        {-8, -12,  -8,  -8,  -8,  -8, -12,  -8, 0,0,0,0,0,0,0,0,
+         -8,   0,   0,   0,   0,   0,   0,  -8, 0,0,0,0,0,0,0,0,
+         -8,   0,   4,   4,   4,   4,   0,  -8, 0,0,0,0,0,0,0,0,
+         -8,   0,   4,   8,   8,   4,   0,  -8, 0,0,0,0,0,0,0,0,
+         -8,   0,   4,   8,   8,   4,   0,  -8, 0,0,0,0,0,0,0,0,
+         -8,   0,   4,   4,   4,   4,   0,  -8, 0,0,0,0,0,0,0,0,
+         -8,   0,   1,   2,   2,   1,   0,  -8, 0,0,0,0,0,0,0,0,
+         -8,  -8,  -8,  -8,  -8,  -8,  -8,  -8, 0,0,0,0,0,0,0,0},
+        // black
+        { 8,   8,   8,   8,   8,   8,   8,   8, 0,0,0,0,0,0,0,0,
+          8,   0,  -1,  -2,  -2,  -1,   0,   8, 0,0,0,0,0,0,0,0,
+          8,   0,  -4,  -4,  -4,  -4,   0,   8, 0,0,0,0,0,0,0,0,
+          8,   0,  -4,  -8,  -8,  -4,   0,   8, 0,0,0,0,0,0,0,0,
+          8,   0,  -4,  -8,  -8,  -4,   0,   8, 0,0,0,0,0,0,0,0,
+          8,   0,  -4,  -4,  -4,  -4,   0,   8, 0,0,0,0,0,0,0,0,
+          8,   0,   0,   0,   0,   0,   0,   8, 0,0,0,0,0,0,0,0,
+          8,  12,   8,   8,   8,   8,   12,  8, 0,0,0,0,0,0,0,0}
+    },
+    // bishop
+    {
+        // white
+        {-4,  -4, -12,  -4,  -4, -12,  -4,  -4, 0,0,0,0,0,0,0,0,
+         -4,   2,   1,   1,   1,   1,   2,  -4, 0,0,0,0,0,0,0,0,
+         -4,   1,   2,   4,   4,   2,   1,  -4, 0,0,0,0,0,0,0,0,
+         -4,   0,   5,   6,   6,   5,   0,  -4, 0,0,0,0,0,0,0,0,
+         -4,   0,   4,   6,   6,   4,   0,  -4, 0,0,0,0,0,0,0,0,
+         -4,   0,   2,   4,   4,   2,   0,  -4, 0,0,0,0,0,0,0,0,
+         -4,   0,   0,   0,   0,   0,   2,  -4, 0,0,0,0,0,0,0,0,
+         -4,  -4,  -4,  -4,  -4,  -4,  -4,  -4, 0,0,0,0,0,0,0,0},
+         // black
+        {4,   4,   4,   4,   4,   4,   4,  -4,  0,0,0,0,0,0,0,0,
+         4,   0,   0,   0,   0,   0,   0,  -4,  0,0,0,0,0,0,0,0,
+         4,   0,  -2,  -4,  -4,  -2,   0,  -4,  0,0,0,0,0,0,0,0,
+         4,   0,  -4,  -6,  -6,  -4,   0,  -4,  0,0,0,0,0,0,0,0,
+         4,   0,  -5,  -6,  -6,  -5,   0,  -4,  0,0,0,0,0,0,0,0,
+         4,  -1,  -2,  -4,  -4,  -2,  -1,  -4,  0,0,0,0,0,0,0,0,
+         4,  -2,  -1,  -1,  -1,  -1,  -2,  -4,  0,0,0,0,0,0,0,0,
+         4,   4,  12,   4,   4,  12,   4,  -4,  0,0,0,0,0,0,0,0}
+    },
+    // rook
+    {
+        // white
+        { 0,   0,   0,   2,   2,   0,   0,   0, 0,0,0,0,0,0,0,0,
+         -5,   0,   0,   0,   0,   0,   0,  -5, 0,0,0,0,0,0,0,0,
+         -5,   0,   0,   0,   0,   0,   0,  -5, 0,0,0,0,0,0,0,0,
+         -5,   0,   0,   0,   0,   0,   0,  -5, 0,0,0,0,0,0,0,0,
+         -5,   0,   0,   0,   0,   0,   0,  -5, 0,0,0,0,0,0,0,0,
+         -5,   0,   0,   0,   0,   0,   0,  -5, 0,0,0,0,0,0,0,0,
+         20,  20,  20,  20,  20,  20,  20,  20, 0,0,0,0,0,0,0,0,
+          5,   5,   5,   5,   5,   5,   5,   5, 0,0,0,0,0,0,0,0},
+        // black
+        {-5,  -5,  -5,  -5,  -5,  -5,  -5,  -5,  0,0,0,0,0,0,0,0,
+        -20, -20, -20, -20, -20, -20, -20, -20,  0,0,0,0,0,0,0,0,
+          5,   0,   0,   0,   0,   0,   0,   5,  0,0,0,0,0,0,0,0,
+          5,   0,   0,   0,   0,   0,   0,   5,  0,0,0,0,0,0,0,0,
+          5,   0,   0,   0,   0,   0,   0,   5,  0,0,0,0,0,0,0,0,
+          5,   0,   0,   0,   0,   0,   0,   5,  0,0,0,0,0,0,0,0,
+          5,   0,   0,   0,   0,   0,   0,   5,  0,0,0,0,0,0,0,0,
+          0,   0,   0,  -2,  -2,   0,   0,   0,  0,0,0,0,0,0,0,0,}
+    },
+    // queen
+    {
+        // white
+        {-5,-5,-5,-5,-5,-5,-5,-5, 0,0,0,0,0,0,0,0,
+          0, 0, 1, 1, 1, 1, 0, 0, 0,0,0,0,0,0,0,0,
+          0, 0, 1, 2, 2, 1, 0, 0, 0,0,0,0,0,0,0,0,
+          0, 0, 2, 3, 3, 2, 0, 0, 0,0,0,0,0,0,0,0,
+          0, 0, 2, 3, 3, 2, 0, 0, 0,0,0,0,0,0,0,0,
+          0, 0, 1, 2, 2, 1, 0, 0, 0,0,0,0,0,0,0,0,
+          0, 0, 1, 1, 1, 1, 0, 0, 0,0,0,0,0,0,0,0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0},
+        // black
+        {0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,
+         0, 0,-1,-1,-1,-1, 0, 0, 0,0,0,0,0,0,0,0,
+         0, 0,-1,-2,-2,-1, 0, 0, 0,0,0,0,0,0,0,0,
+         0, 0,-2,-3,-3,-2, 0, 0, 0,0,0,0,0,0,0,0,
+         0, 0,-2,-3,-3,-2, 0, 0, 0,0,0,0,0,0,0,0,
+         0, 0,-1,-2,-2,-1, 0, 0, 0,0,0,0,0,0,0,0,
+         0, 0,-1,-1,-1,-1, 0, 0, 0,0,0,0,0,0,0,0,
+         5, 5, 5, 5, 5, 5, 5, 5, 0,0,0,0,0,0,0,0}
+    },
+    // king
+    {
+        // white
+        {40,  50,  30,  10,  10,  30,  50,  40,  0,0,0,0,0,0,0,0,
+          30,  40,  20,   0,   0,  20,  40,  30,  0,0,0,0,0,0,0,0,
+          10,  20,   0, -20, -20,   0,  20,  10,  0,0,0,0,0,0,0,0,
+           0,  10, -10, -30, -30, -10,  10,   0,  0,0,0,0,0,0,0,0,
+         -10,   0, -20, -40, -40, -20,   0, -10,  0,0,0,0,0,0,0,0,
+         -20, -10, -30, -50, -50, -30, -10, -20,  0,0,0,0,0,0,0,0,
+         -30, -20, -40, -60, -60, -40, -20, -30,  0,0,0,0,0,0,0,0,
+         -40, -30, -50, -70, -70, -50, -30, -40,  0,0,0,0,0,0,0,0},
+        // black
+        {40,  30,  50,  70,  70,  50,  30,  40, 0,0,0,0,0,0,0,0,
+         30,  20,  40,  60,  60,  40,  20,  30, 0,0,0,0,0,0,0,0,
+         20,  10,  30,  50,  50,  30,  10,  20, 0,0,0,0,0,0,0,0,
+         10,   0,  20,  40,  40,  20,   0,  10, 0,0,0,0,0,0,0,0,
+          0, -10,  10,  30,  30,  10, -10,   0, 0,0,0,0,0,0,0,0,
+        -10, -20,   0,  20,  20,   0, -20, -10, 0,0,0,0,0,0,0,0,
+        -30, -40, -20,   0,   0, -20, -40, -30, 0,0,0,0,0,0,0,0,
+        -40, -50, -30, -10, -10, -30, -50, -40, 0,0,0,0,0,0,0,0}
+    }
 };
 
 char ascci_piece[7][3] = {
@@ -90,25 +221,55 @@ S8 colOfSq(S8 sq) {
 	return sq & 7;
 }
 
+U64 rand64() {
+ static U64 next = 1;
+
+  next = next * 1103515245 + 12345;
+  return next;
+}
+
 Chess::Chess() {
+
     loadFEN(START_FEN);
+	 depth_max = 2;
+	 m_materialCount = 0;
 }
 
 void Chess::clearSq(S8 sq) {
-    this->materialCount -= PIECE_VALUE[piece[sq]][color[sq]];
-    this->piece[sq] = EMPTY;
-    this->color[sq] = COLOR_EMPTY;
+	if(piece[sq] == EMPTY)
+		return;
+	U8 piece = this->piece[sq];
+	U8 color = this->color[sq];
+	// update matetial count
+	this->m_materialCount -= PIECE_VALUE[piece][color] + PIECE_VALUE_SQUARE[piece][color][sq];
+	// empty the square
+	this->piece[sq] = EMPTY;
+	this->color[sq] = COLOR_EMPTY;
+	// update the hash
+	this->hash ^= zobrist.piecesquare[piece][color][sq];
 }
 
 void Chess::fillSq(U8 color, U8 piece, S8 sq) {
-    this->piece[sq] = piece;
-    this->color[sq] = color;
+	if(piece == EMPTY)
+		return;
+	// update material count
+	this->m_materialCount += PIECE_VALUE[piece][color] + PIECE_VALUE_SQUARE[piece][color][sq];
+	// actually fill the square
+	this->piece[sq] = piece;
+	this->color[sq] = color;
+	// update the hash key
+	this->hash ^= zobrist.piecesquare[piece][color][sq];
 };
 
 void Chess::clearBoard() {
-    for (S8 row = 0; row < 8; row++)
-        for (S8 col = 0; col < 8; col++)
-            clearSq(16 * row + col);
+    for (int sq = 0;sq < 128; sq++) {
+		 piece[sq] = EMPTY;
+		 color[sq] = COLOR_EMPTY;
+	}
+	 m_materialCount = 0;
+	 hash = 0;
+	 castlingRights = 0;
+	 enPassantSquare = -1;
 }
 
 void Chess::loadFEN(std::string FEN) {
@@ -147,10 +308,12 @@ void Chess::loadFEN(std::string FEN) {
 
     i++;
 
-    if (FEN[i] == 'w')
-        sideToMove = WHITE;
-    else
-        sideToMove = BLACK;
+	if (FEN[i] == 'w')
+		sideToMove = WHITE;
+	else {
+		sideToMove = BLACK;
+		this->hash ^= zobrist.color;
+	}
 
     i += 2;
 
@@ -164,10 +327,13 @@ void Chess::loadFEN(std::string FEN) {
         };
     }
 
+	 this->hash ^= zobrist.castling[this->castlingRights];
+
     i++;
     // get en passant square
     if(FEN[i] != '-') {
 
+		 // update the hash
     }
     // get move count until draw
 
@@ -193,6 +359,7 @@ void Chess::makeMove(smove move) {
 
     // change side to move
     this->sideToMove = !this->sideToMove;
+	 hash ^= zobrist.color;
 
     // removing castling rights
     switch (move.from) {
@@ -211,6 +378,8 @@ void Chess::makeMove(smove move) {
       case E8: this->castlingRights &= ~(CASTLE_BK | CASTLE_BQ); break;
       case A8: this->castlingRights &= ~CASTLE_BQ; break;
     }
+	hash ^= zobrist.castling[move.castling_flags];
+	hash ^= zobrist.castling[this->castlingRights];
 
     // moving the rook if the move is a castling one
     if (piece[move.to] == KING && abs(move.from - move.to) == 2) {
@@ -231,7 +400,6 @@ void Chess::makeMove(smove move) {
             fillSq(BLACK, ROOK, D8);
         }
   }
-
     // en passant
     if (move.flags & EP_FLAG) {
         if (!this->sideToMove == WHITE) {
@@ -240,9 +408,14 @@ void Chess::makeMove(smove move) {
             clearSq(move.to + 16);
         }
     }
-
-	if (piece[move.to] == PAWN && (abs(move.from - move.to) == 32))
+	if (int(enPassantSquare) != -1) {
+		hash ^= zobrist.ep[this->enPassantSquare];
+		enPassantSquare = -1;
+	}
+	if (piece[move.to] == PAWN && (abs(move.from - move.to) == 32)) {
 		enPassantSquare = (move.from + move.to) / 2;
+		hash ^= zobrist.ep[this->enPassantSquare];
+	}
 
     // promotion
 	if (move.flags & PROMOTION_FLAG) {
@@ -250,6 +423,8 @@ void Chess::makeMove(smove move) {
 			fillSq(!this->sideToMove, KNIGHT, move.to);
 		if (move.flags & PROMOTION_BISHOP_FLAG)
 			fillSq(!this->sideToMove, BISHOP, move.to);
+		if (move.flags & PROMOTION_ROOK_FLAG)
+			fillSq(!this->sideToMove, ROOK, move.to);
 		if (move.flags & PROMOTION_QUEEN_FLAG)
 			fillSq(!this->sideToMove, QUEEN, move.to);
     }
@@ -264,11 +439,16 @@ void Chess::makeMove(smove move) {
 void Chess::unmakeMove(smove move) {
     // changing side to move
     this->sideToMove = !this->sideToMove;
+	 hash ^= zobrist.color;
 
     // update this count
     this->withoutCaptureCount = move.moveTillDrawCount;
 
     // restore en passant sque
+	 if(int(this->enPassantSquare) != -1)
+		 hash ^= zobrist.ep[this->enPassantSquare];
+	 if(int(move.epSquare) != -1)
+		 hash ^= zobrist.ep[move.epSquare];
     this->enPassantSquare = move.epSquare;
 
     // remove moved piece
@@ -302,7 +482,13 @@ void Chess::unmakeMove(smove move) {
     }
 
     // change castling rights
+	 hash ^= zobrist.castling[this->castlingRights];
+	 hash ^= zobrist.castling[move.castling_flags];
     this->castlingRights = move.castling_flags;
+
+	 // reset the king pos
+	 if(piece[move.from] == KING)
+		 king[this->sideToMove] = move.from;
 
     // undo en passant
 	if (move.flags & EP_FLAG) {
@@ -342,20 +528,22 @@ bool Chess::isAttacked(bool side, S8 sq) const {
 		return 1;
 
 	// straight line sliders 
-  if (straightAttack(side, sq, NORTH) ||
+   if (straightAttack(side, sq, NORTH) ||
     straightAttack(side, sq, SOUTH) ||
     straightAttack(side, sq, EAST) ||
     straightAttack(side, sq, WEST)
-    )
+    )	{ 
     return 1;
+	}
 
   // diagonal sliders 
   if (diagAttack(side, sq, NE) ||
     diagAttack(side, sq, SE) ||
     diagAttack(side, sq, NW) ||
     diagAttack(side, sq, SW)
-    )
+    ) {
     return 1;
+	}
 
 	return 0;
 }
@@ -386,8 +574,9 @@ bool Chess::diagAttack(bool side, S8 sq, U8 dir) const {
 	U8 to = sq + dir;
 	while(!(to & 0x88)) {
 		if(color[to] != COLOR_EMPTY) {
-			if(color[to] == side && (piece[to] == QUEEN || piece[to] == BISHOP))
+			if(color[to] == side && (piece[to] == QUEEN || piece[to] == BISHOP)) {
 				return 1;
+			}
 			return 0;
 		}
 		to += dir;
@@ -439,11 +628,10 @@ std::vector<smove> Chess::genPseudoLegalMoves() const {
 						S8 newTo = to+d;
 						if(!(newTo & 0x88) && piece[newTo] != EMPTY && color[newTo] == !sideToMove) {
 							if(rowOfSq(newTo) == PAWN_PROMOTION_ROW[sideToMove]) {
-								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_KNIGHT_FLAG);
-								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_BISHOP_FLAG);
-								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_ROOK_FLAG);
-								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_QUEEN_FLAG);
-
+								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_KNIGHT_FLAG, piece[newTo]);
+								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_BISHOP_FLAG, piece[newTo]);
+								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_ROOK_FLAG, piece[newTo]);
+								this->addMove(pseudoLegalMoves, sq, newTo, PROMOTION_FLAG | PROMOTION_QUEEN_FLAG, piece[newTo]);
 							} else {
 								this->addMove(pseudoLegalMoves, sq, newTo, 0, piece[newTo]);
 							}
@@ -555,4 +743,159 @@ U8 Chess::pieceAt(S8 sq) const {
 U8 Chess::colorAt(S8 sq) const {
     return this->color[sq];
 }
+bool Chess::toPlay() const {
+	return this-> sideToMove;
+}
+int Chess::materialCount() const {
+	return this->m_materialCount;
+}
 
+U8 Chess::whereIsKing(U8 color) const {
+	return king[color];
+}
+
+bool Chess::isCurrentPlayerChecked() const {
+	return isAttacked(!sideToMove, king[sideToMove]);
+}
+
+
+
+// test
+int Chess::numberMoves(int depth) {
+	if (depth == 0)
+		return 1;
+
+	std::vector<smove> pseudoLegalMoves = genPseudoLegalMoves();
+	int tot = 0;
+
+	for (smove move : pseudoLegalMoves) {
+		makeMove(move);
+		if (!isAttacked(sideToMove, king[!sideToMove])) {
+			int n = numberMoves(depth - 1);
+			// if (depth == 2) {
+			// 	std::cout << int(move.from) << " " << int(move.to) << " : " << n << "\n";
+			// 	show();
+			// }
+
+			tot += n;
+		}
+		unmakeMove(move);
+	}
+
+	return tot;
+}
+
+// bot
+int Chess::eval() const {
+	return this->m_materialCount;
+}
+
+smove Chess::bestMove() {
+	std::cout << "eval : " << minmax(0) << "\n";
+	// std::cout << "eval : " << alphabeta(0, -INFINF, +INFINF) << "\n";
+	return m_bestMove;
+}
+
+int Chess::minmax(int depth) {
+	if (depth > depth_max) {
+		return eval();
+	}
+
+	int bestEval = -INFINF;
+	if (sideToMove == BLACK)
+		bestEval = INFINF;
+	std::vector<smove> pseudoLegalMoves = genPseudoLegalMoves();
+
+	for (smove move : pseudoLegalMoves) {
+		makeMove(move);
+		if (!isAttacked(sideToMove, king[!sideToMove])) {
+			int curEval = minmax(depth+1);
+			// we're looking for the best move for white
+			if (sideToMove == BLACK) {
+				if (bestEval < curEval) {
+					bestEval = curEval;
+					if (depth == 0)
+						m_bestMove = move;
+				}
+			} else {
+				if (bestEval > curEval) {
+					bestEval = curEval;
+					if (depth == 0)
+						m_bestMove = move;
+				}
+			}
+		}
+		unmakeMove(move);
+	}
+
+	return bestEval;
+}
+
+int Chess::alphabeta(int depth, int alpha, int beta) {
+	if(depth > depth_max)
+		return eval();
+	
+	// white
+	if(this->sideToMove) {
+		int value = -INFINF;
+		std::vector<smove> pseudoLegalMoves = genPseudoLegalMoves();
+
+		for (smove move : pseudoLegalMoves) {
+			makeMove(move);
+			if(!isAttacked(sideToMove, king[!sideToMove])) {
+				int curEval = alphabeta(depth+1, alpha, beta);
+				if(curEval > value) {
+					value = curEval;
+					if(value >= beta)
+						return -INF;
+					if(value > alpha)
+						alpha = value;
+				}
+			}
+			unmakeMove(move);
+		}
+
+		return value;
+	} else {
+		int value = INFINF;
+		std::vector<smove> pseudoLegalMoves = genPseudoLegalMoves();
+
+		for (smove move : pseudoLegalMoves) {
+			makeMove(move);
+			if(!isAttacked(sideToMove, king[!sideToMove])) {
+				int curEval = alphabeta(depth+1, alpha, beta);
+				if(curEval < value) {
+					value = curEval;
+					if(value <= alpha)
+						return -INF;
+					if(value > beta)
+						beta = value;
+				}
+			}
+			unmakeMove(move);
+		}
+
+		return value;
+	}
+}
+
+// hash tables
+void Chess::initZobrist() {
+	for (int pnr = 0; pnr <= 5; pnr++) {
+		for (int cnr = 0; cnr <= 1; cnr++) {
+			for (int snr = 0; snr <= 127; snr++) {
+				zobrist.piecesquare[pnr][cnr][snr] = rand64();
+			}
+		}
+	}
+
+	zobrist.color = rand64();
+
+	for (int castling = 0; castling <= 15; castling++) {
+		zobrist.castling[castling] = rand64();
+	}
+
+	for (int ep = 0; ep <= 127; ep++) {
+		zobrist.ep[ep] = rand64();
+	}
+}

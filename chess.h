@@ -53,12 +53,21 @@ struct smove {
 	S8 moveTillDrawCount;
 };
 
+struct szobrist {
+	U64 piecesquare[6][2][128];
+	U64 color;
+	U64 castling[16];
+	U64 ep[128];
+};
+
 bool isPromotion(smove move);
 
 S8 square(S8 row, S8 col);
 S8 square(std::string sq);
 S8 rowOfSq(S8 sq);
 S8 colOfSq(S8 sq);
+
+U64 rand64();
 
 class Chess {
 	public:
@@ -84,9 +93,24 @@ class Chess {
 		std::vector<smove> genPseudoLegalMoves() const;
 		std::vector<smove> genLegalMoves();
 
+		// to test :
+		int numberMoves(int depth);
+
 		void show() const;
 		U8 pieceAt(S8 sq) const;
 		U8 colorAt(S8 sq) const;
+		bool toPlay() const;
+		int materialCount() const;
+
+		U8 whereIsKing(U8 color) const;
+		bool isCurrentPlayerChecked() const;
+
+		void initZobrist();
+
+		int eval() const;
+		smove bestMove();
+		int minmax(int depth);
+		int alphabeta(int depth, int alpha, int beta);
 
 	private:;
 		U8 piece[128];
@@ -101,8 +125,14 @@ class Chess {
 
 		S8 castlingRights;
 
-		int materialCount;
+		int m_materialCount;
 		int moveCount;
+
+		int depth_max;
+		smove m_bestMove;
+
+		szobrist zobrist;
+		U64 hash;
 
 		//smove moves[NB_MOVES_MEMORY];
 };

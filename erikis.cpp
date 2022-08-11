@@ -4,6 +4,7 @@ const int NB_THEMES = 1;
 
 const QString BG_COLOR[2] = {"#F0D9B5", "#B58863"};
 const QString POSSIBLE_MOVE = "#AEB188";
+const QString ATTACKED_KING = "#b30000";
 const int SQUARE_SIZE = 100;
 
 const QString THEMES[NB_THEMES] = {"default"};
@@ -17,6 +18,9 @@ Erikis::Erikis(QWidget *parent)
     genIcons(0);
     getPossibleMoves();
     this->displayPieces();
+    players[0] = "Blanc";
+    players[1] = "Noir";
+    ai = true;
 }
 
 Erikis::~Erikis()
@@ -63,6 +67,10 @@ void Erikis::resetBoardColor() {
                 m_cases[sq]->setStyleSheet("background-color: " + BG_COLOR[1]);
          }
     }
+    if (board.isCurrentPlayerChecked())
+         m_cases[board.whereIsKing(board.toPlay())]->setStyleSheet("background-color: " + ATTACKED_KING);
+    // m_cases[board.whereIsKing(WHITE)]->setStyleSheet("background-color: " + ATTACKED_KING);
+    // m_cases[board.whereIsKing(BLACK)]->setStyleSheet("background-color: " + ATTACKED_KING);
 }
 
 void Erikis::genIcons(int theme) {
@@ -80,6 +88,7 @@ void Erikis::genIcons(int theme) {
 
 void Erikis::displayPieces() {
     board.show();
+    std::cout << "matériel : " << board.materialCount() << "\n";
 
     for (S8 row = 7; row >= 0; row--) {
         for (S8 col = 0; col < 8; col++) {
@@ -132,6 +141,30 @@ int Erikis::getPromotion() {
     return picked;
 }
 
+void Erikis::checkWinnerDraw() {
+    if (possibleMoves.empty()) {
+        // checked : win
+        if(board.isCurrentPlayerChecked())
+            displayWinner(players[!board.toPlay()]);
+        // not checked : stalemate
+        else
+            displayDraw("pat");
+    }
+
+}
+
+void Erikis::displayWinner(QString winner) {
+    QMessageBox winnerDisplay;
+    winnerDisplay.setText(winner + " a gagné !");
+    winnerDisplay.exec();
+}
+
+void Erikis::displayDraw(QString why) {
+    QMessageBox drawDisplay;
+    drawDisplay.setText("Nulle par " + why);
+    drawDisplay.exec();
+}
+
 void Erikis::squareClicked(int sq) {
     // si la case séléctionnée n'était pas dans le tableau
     if(prev & 0x88) {
@@ -142,7 +175,7 @@ void Erikis::squareClicked(int sq) {
         // if we can play the move :
         bool possible = false;
         int i = 0;
-        for (i = 0; i < this->possibleMoves.size(); i++) {
+        for (i = 0; i < int(this->possibleMoves.size()); i++) {
             if (this->possibleMoves[i].from == prev && this->possibleMoves[i].to == sq) {
                 possible = true;
                 break;
@@ -159,11 +192,19 @@ void Erikis::squareClicked(int sq) {
             board.makeMove(possibleMoves[i]);
             resetBoardColor();
 
+            if (ai) {
+                this->getPossibleMoves();
+                prev = -1;
+                this->displayPieces();
+                this->checkWinnerDraw();
+
+                board.makeMove(board.bestMove());
+            }
+
             this->getPossibleMoves();
-
             prev = -1;
-
-            displayPieces();
+            this->displayPieces();
+            this->checkWinnerDraw();
         } else {
             prev = sq;
             resetBoardColor();

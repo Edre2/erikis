@@ -17,11 +17,19 @@ public:
 
     void genIcons(int theme);
     void createBoard();
+
     void resetBoardColor();
+
     void displayPieces();
+
     void getPossibleMoves();
     void showPossibleMoves();
+
     int getPromotion();
+
+    void checkWinnerDraw();
+    void displayDraw(QString why);
+    void displayWinner(QString winner);
 
 public slots:
     void squareClicked(int sq);
@@ -35,8 +43,12 @@ private:
 
     QIcon icons[7][3];
 
+    QString players[2];
+
     U8 prev = -1;
     std::vector<smove> possibleMoves;
+
+    bool ai;
 
 };
 #endif // ERIKIS_H

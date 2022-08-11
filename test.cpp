@@ -1,41 +1,29 @@
 #include "chess.h"
 
-
-const int EP_FLAG = 1;
-const int CASTLE_FLAG = 2;
-const int PROMOTION_KNIGHT_FLAG = 4;
-const int PROMOTION_BISHOP_FLAG = 8;
-const int PROMOTION_ROOK_FLAG = 16;
-const int PROMOTION_QUEEN_FLAG = 32;
-const int PROMOTION_FLAG = 64;
-
-bool testz() {
-	return ((PROMOTION_FLAG | PROMOTION_KNIGHT_FLAG) & PROMOTION_FLAG );
-}
-
+#include <sys/time.h>
 
 int main() {
 
 	Chess test;
 
-	test.show();
-
-	std::vector<smove> t = test.genPseudoLegalMoves();
-
-	for (smove &move : t) {
-		std::cout << int(move.from) << " " << int(move.to) << "\n";
-	}
-
-	test.makeMove(t[1]);
+	test.loadFEN("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
 
 	test.show();
 
-	if (testz())
-		std::cout << "a";
-	else
-		std::cout << "b";
+	std::cout << test.minmax(2) << "\n";
+	std::cout << test.alphabeta(2, -10000000, 1000000) << "\n";
 
-	std::cout << "\n\n" << (((PROMOTION_FLAG | PROMOTION_KNIGHT_FLAG) & PROMOTION_FLAG ) == true ) << "\n";
+// 	int start = clock();
+//
+// 	int nbMoves = test.numberMoves(5);
+//
+// 	int end = clock();
+//
+// 	float seconds = ((float)end - start)/CLOCKS_PER_SEC;
+//
+// std::cout << "it took " << end - start << "ticks, or " << seconds << "seconds.\n";;
+// std::cout << "number of moves : " << nbMoves << "\n";
+// std::cout << "speed : " << ((float)nbMoves)/seconds << "Nps\n";
 
 	return 0;
 }
