@@ -69,6 +69,9 @@ S8 colOfSq(S8 sq);
 
 U64 rand64();
 
+std::string toString(const int sq);
+std::string toString(const smove move);
+
 class Chess {
 	public:
 		Chess();
@@ -96,11 +99,13 @@ class Chess {
 		// to test :
 		int numberMoves(int depth);
 
+		// accessors :
 		void show() const;
 		U8 pieceAt(S8 sq) const;
 		U8 colorAt(S8 sq) const;
 		bool toPlay() const;
 		int materialCount() const;
+		U64 hash() const;
 
 		U8 whereIsKing(U8 color) const;
 		bool isCurrentPlayerChecked() const;
@@ -108,7 +113,8 @@ class Chess {
 		void initZobrist();
 
 		int eval() const;
-		smove bestMove();
+		smove bestMoveMinMax();
+		smove bestMoveAlphaBeta();
 		int minmax(int depth);
 		int alphabeta(int depth, int alpha, int beta);
 
@@ -132,7 +138,7 @@ class Chess {
 		smove m_bestMove;
 
 		szobrist zobrist;
-		U64 hash;
+		U64 m_hash;
 
 		//smove moves[NB_MOVES_MEMORY];
 };

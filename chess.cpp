@@ -1,5 +1,5 @@
 #include "chess.h"
-
+int c1 = 0, c2 = 0;
 
 const int INF = 10000;
 const int INFINF = 100000;
@@ -221,6 +221,35 @@ S8 colOfSq(S8 sq) {
 	return sq & 7;
 }
 
+std::string toString(const int sq) {
+    std::string result = "  ";
+    switch(colOfSq(sq)) {
+        case 0: result[0] = 'a'; break;
+        case 1: result[0] = 'b'; break;
+        case 2: result[0] = 'c'; break;
+        case 3: result[0] = 'd'; break;
+        case 4: result[0] = 'e'; break;
+        case 5: result[0] = 'f'; break;
+        case 6: result[0] = 'g'; break;
+        case 7: result[0] = 'h'; break;
+    };
+    switch(rowOfSq(sq)) {
+        case 0: result[1] = '1'; break;
+        case 1: result[1] = '2'; break;
+        case 2: result[1] = '3'; break;
+        case 3: result[1] = '4'; break;
+        case 4: result[1] = '5'; break;
+        case 5: result[1] = '6'; break;
+        case 6: result[1] = '7'; break;
+        case 7: result[1] = '8'; break;
+    };
+    return result;
+}
+
+std::string toString(const smove move) {
+	return toString(move.from) + toString(move.to);
+}
+
 U64 rand64() {
  static U64 next = 1;
 
@@ -228,13 +257,20 @@ U64 rand64() {
   return next;
 }
 
-Chess::Chess() {
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+//////////////// the Chess class ///////////////////
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
 
+// constructor
+Chess::Chess() {
+	initZobrist();
     loadFEN(START_FEN);
-	 depth_max = 2;
-	 m_materialCount = 0;
+	depth_max = 4;
 }
 
+// clears a square and takes care of all needed operations : material count, hash
 void Chess::clearSq(S8 sq) {
 	if(piece[sq] == EMPTY)
 		return;
@@ -246,9 +282,10 @@ void Chess::clearSq(S8 sq) {
 	this->piece[sq] = EMPTY;
 	this->color[sq] = COLOR_EMPTY;
 	// update the hash
-	this->hash ^= zobrist.piecesquare[piece][color][sq];
+	this->m_hash ^= zobrist.piecesquare[piece][color][sq];
 }
 
+// fills a square and takes care of all needed operations : material count, hash
 void Chess::fillSq(U8 color, U8 piece, S8 sq) {
 	if(piece == EMPTY)
 		return;
@@ -258,20 +295,22 @@ void Chess::fillSq(U8 color, U8 piece, S8 sq) {
 	this->piece[sq] = piece;
 	this->color[sq] = color;
 	// update the hash key
-	this->hash ^= zobrist.piecesquare[piece][color][sq];
+	this->m_hash ^= zobrist.piecesquare[piece][color][sq];
 };
 
+// clears the board and resets everything : material count, hash, en passant, castling rights
 void Chess::clearBoard() {
     for (int sq = 0;sq < 128; sq++) {
 		 piece[sq] = EMPTY;
 		 color[sq] = COLOR_EMPTY;
 	}
 	 m_materialCount = 0;
-	 hash = 0;
+	 this->m_hash = 0;
 	 castlingRights = 0;
 	 enPassantSquare = -1;
 }
 
+// loads a FEN position to the board
 void Chess::loadFEN(std::string FEN) {
 
     clearBoard();
@@ -312,7 +351,7 @@ void Chess::loadFEN(std::string FEN) {
 		sideToMove = WHITE;
 	else {
 		sideToMove = BLACK;
-		this->hash ^= zobrist.color;
+		this->m_hash ^= zobrist.color;
 	}
 
     i += 2;
@@ -327,7 +366,7 @@ void Chess::loadFEN(std::string FEN) {
         };
     }
 
-	 this->hash ^= zobrist.castling[this->castlingRights];
+	 this->m_hash ^= zobrist.castling[this->castlingRights];
 
     i++;
     // get en passant square
@@ -340,6 +379,7 @@ void Chess::loadFEN(std::string FEN) {
     // get move count
 };
 
+// makes a move
 void Chess::makeMove(smove move) {
 
     // if it's a capture or a pawn move, reset the count
@@ -359,7 +399,7 @@ void Chess::makeMove(smove move) {
 
     // change side to move
     this->sideToMove = !this->sideToMove;
-	 hash ^= zobrist.color;
+	 this->m_hash ^= zobrist.color;
 
     // removing castling rights
     switch (move.from) {
@@ -378,8 +418,8 @@ void Chess::makeMove(smove move) {
       case E8: this->castlingRights &= ~(CASTLE_BK | CASTLE_BQ); break;
       case A8: this->castlingRights &= ~CASTLE_BQ; break;
     }
-	hash ^= zobrist.castling[move.castling_flags];
-	hash ^= zobrist.castling[this->castlingRights];
+	this->m_hash ^= zobrist.castling[move.castling_flags];
+	this->m_hash ^= zobrist.castling[this->castlingRights];
 
     // moving the rook if the move is a castling one
     if (piece[move.to] == KING && abs(move.from - move.to) == 2) {
@@ -409,16 +449,18 @@ void Chess::makeMove(smove move) {
         }
     }
 	if (int(enPassantSquare) != -1) {
-		hash ^= zobrist.ep[this->enPassantSquare];
+		this->m_hash ^= zobrist.ep[this->enPassantSquare];
 		enPassantSquare = -1;
 	}
 	if (piece[move.to] == PAWN && (abs(move.from - move.to) == 32)) {
 		enPassantSquare = (move.from + move.to) / 2;
-		hash ^= zobrist.ep[this->enPassantSquare];
+		this->m_hash ^= zobrist.ep[this->enPassantSquare];
 	}
 
     // promotion
 	if (move.flags & PROMOTION_FLAG) {
+		//remove the awn that we put there
+		clearSq(move.to);
 		if (move.flags & PROMOTION_KNIGHT_FLAG)
 			fillSq(!this->sideToMove, KNIGHT, move.to);
 		if (move.flags & PROMOTION_BISHOP_FLAG)
@@ -436,19 +478,20 @@ void Chess::makeMove(smove move) {
     moveCount++;
 }
 
+// unmakes a move
 void Chess::unmakeMove(smove move) {
     // changing side to move
     this->sideToMove = !this->sideToMove;
-	 hash ^= zobrist.color;
+	 this->m_hash ^= zobrist.color;
 
     // update this count
     this->withoutCaptureCount = move.moveTillDrawCount;
 
     // restore en passant sque
 	 if(int(this->enPassantSquare) != -1)
-		 hash ^= zobrist.ep[this->enPassantSquare];
+		 this->m_hash ^= zobrist.ep[this->enPassantSquare];
 	 if(int(move.epSquare) != -1)
-		 hash ^= zobrist.ep[move.epSquare];
+		 this->m_hash ^= zobrist.ep[move.epSquare];
     this->enPassantSquare = move.epSquare;
 
     // remove moved piece
@@ -482,8 +525,8 @@ void Chess::unmakeMove(smove move) {
     }
 
     // change castling rights
-	 hash ^= zobrist.castling[this->castlingRights];
-	 hash ^= zobrist.castling[move.castling_flags];
+	 this->m_hash ^= zobrist.castling[this->castlingRights];
+	 this->m_hash ^= zobrist.castling[move.castling_flags];
     this->castlingRights = move.castling_flags;
 
 	 // reset the king pos
@@ -500,6 +543,7 @@ void Chess::unmakeMove(smove move) {
 	}
 };
 
+// returns if a square is attacked vy any of the oponent's pieces
 bool Chess::isAttacked(bool side, S8 sq) const {
 	// pawn
 	if (side == WHITE) {
@@ -548,6 +592,7 @@ bool Chess::isAttacked(bool side, S8 sq) const {
 	return 0;
 }
 
+// returns if a non-sliding piece can attack a certain square
 bool Chess::leaperAttack(bool side, U8 piece, S8 sq) const {
 	for(int i = 0; i < NB_MOVES[piece]; i++) {
 		U8 to = sq + MOVES[piece][i];
@@ -557,6 +602,7 @@ bool Chess::leaperAttack(bool side, U8 piece, S8 sq) const {
 	return 0;
 }
 
+// returns if a rook/queen can attack a certain square following a direction
 bool Chess::straightAttack(bool side, S8 sq, U8 dir) const {
 	U8 to = sq + dir;
 	while(!(to & 0x88)) {
@@ -570,6 +616,7 @@ bool Chess::straightAttack(bool side, S8 sq, U8 dir) const {
 	return 0;
 }
 
+// returns if a bishop/queen can attack a certain square following a direction
 bool Chess::diagAttack(bool side, S8 sq, U8 dir) const {
 	U8 to = sq + dir;
 	while(!(to & 0x88)) {
@@ -584,6 +631,7 @@ bool Chess::diagAttack(bool side, S8 sq, U8 dir) const {
 	return 0;
 }
 
+// adds a move to a vector of moves, adding the correct flags, castling rights move count
 void Chess::addMove(std::vector<smove>& v, const U8 &from, const U8 &to, const S8 &flags, const U8& capture) const {
 	v.push_back({from, to, flags, this->castlingRights, capture, this->enPassantSquare, this->withoutCaptureCount});
 }
@@ -712,6 +760,7 @@ std::vector<smove> Chess::genPseudoLegalMoves() const {
 	return pseudoLegalMoves;
 }
 
+// returns all legal move in a position
 std::vector<smove> Chess::genLegalMoves() {
 	std::vector<smove> pseudoLegalMoves = genPseudoLegalMoves();
 	std::vector<smove> legalMoves;
@@ -727,6 +776,7 @@ std::vector<smove> Chess::genLegalMoves() {
 	return legalMoves;
 }
 
+// outputs the board to the standart output
 void Chess::show() const {
     for (S8 row = 7; row >= 0; row--) {
         for (S8 col = 0; col < 8; col++) {
@@ -737,30 +787,40 @@ void Chess::show() const {
     }
 }
 
+// ACCESSORS
+
+// return the piece at a certain square
 U8 Chess::pieceAt(S8 sq) const {
     return this->piece[sq];
 }
+// returns the color of the piece at a certain square
 U8 Chess::colorAt(S8 sq) const {
     return this->color[sq];
 }
+// returns the player who's turn it is
 bool Chess::toPlay() const {
 	return this-> sideToMove;
 }
+// returns the actual material count
 int Chess::materialCount() const {
 	return this->m_materialCount;
 }
+// returns the hash of the current position
+U64 Chess::hash() const {
+	return this->m_hash;
+}
 
+// return the square where the king of the color is
 U8 Chess::whereIsKing(U8 color) const {
 	return king[color];
 }
-
+// return if the current player is in check
 bool Chess::isCurrentPlayerChecked() const {
 	return isAttacked(!sideToMove, king[sideToMove]);
 }
 
 
-
-// test
+// a function to test whether the make, unmake, genPseudoLegalMoves and isAttacked funcitons work
 int Chess::numberMoves(int depth) {
 	if (depth == 0)
 		return 1;
@@ -785,19 +845,30 @@ int Chess::numberMoves(int depth) {
 	return tot;
 }
 
-// bot
+// evaluates the position
 int Chess::eval() const {
 	return this->m_materialCount;
 }
 
-smove Chess::bestMove() {
-	std::cout << "eval : " << minmax(0) << "\n";
-	// std::cout << "eval : " << alphabeta(0, -INFINF, +INFINF) << "\n";
+// returns the best move using the alphabeta algorithm
+smove Chess::bestMoveAlphaBeta() {
+	std::cout << "ALPHABETA\n";
+	int e = alphabeta(0, -INFINF, +INFINF);
+	std::cout << "eval : " <<  e << "\n";
+	return m_bestMove;
+}
+// returns the best move using the minmax algorithm
+smove Chess::bestMoveMinMax() {
+	std::cout << "MINMAX\n";
+	int e = minmax(0);
+	std::cout << "eval : " << e << "\n";
 	return m_bestMove;
 }
 
+// evaluates the position using the minmax algorithm
 int Chess::minmax(int depth) {
 	if (depth > depth_max) {
+		c1++;
 		return eval();
 	}
 
@@ -818,6 +889,8 @@ int Chess::minmax(int depth) {
 						m_bestMove = move;
 				}
 			} else {
+				// std::cout << toString(move) << " : " << curEval<< "\n";
+
 				if (bestEval > curEval) {
 					bestEval = curEval;
 					if (depth == 0)
@@ -828,32 +901,46 @@ int Chess::minmax(int depth) {
 		unmakeMove(move);
 	}
 
+	if(depth==0)
+		std::cout << c1 << "\n";
+
 	return bestEval;
 }
 
+// evaluates the position using the alphabeta algorithm
 int Chess::alphabeta(int depth, int alpha, int beta) {
-	if(depth > depth_max)
+	if(depth > depth_max) {
+		c2++;
 		return eval();
+	}
 	
-	// white
-	if(this->sideToMove) {
+	// white = maximazing player
+	if(this->sideToMove == WHITE) {
 		int value = -INFINF;
 		std::vector<smove> pseudoLegalMoves = genPseudoLegalMoves();
 
 		for (smove move : pseudoLegalMoves) {
 			makeMove(move);
+			// if it was a legal move
 			if(!isAttacked(sideToMove, king[!sideToMove])) {
 				int curEval = alphabeta(depth+1, alpha, beta);
 				if(curEval > value) {
 					value = curEval;
-					if(value >= beta)
-						return -INF;
+					if(depth == 0)
+						m_bestMove = move;
+					if(value >= beta) {
+						unmakeMove(move);
+						return INF;
+					}
 					if(value > alpha)
 						alpha = value;
 				}
 			}
 			unmakeMove(move);
 		}
+
+		if(depth==0)
+			std::cout << c2 << "\n";
 
 		return value;
 	} else {
@@ -866,8 +953,12 @@ int Chess::alphabeta(int depth, int alpha, int beta) {
 				int curEval = alphabeta(depth+1, alpha, beta);
 				if(curEval < value) {
 					value = curEval;
-					if(value <= alpha)
+					if(depth == 0)
+						m_bestMove = move;
+					if(value <= alpha) {
+						unmakeMove(move);
 						return -INF;
+					}
 					if(value > beta)
 						beta = value;
 				}

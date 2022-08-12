@@ -119,7 +119,7 @@ int Erikis::getPromotion() {
     QMessageBox piecePicker;
     piecePicker.setText("Choisissez en quoi vous voulez promouvoir votre pion");
 
-    QPushButton *queenButton = piecePicker.addButton("Reine", QMessageBox::ActionRole);
+    QPushButton *queenButton = piecePicker.addButton("Dame", QMessageBox::ActionRole);
     QPushButton *rookButton = piecePicker.addButton("Tour", QMessageBox::ActionRole);
     QPushButton *bishopButton = piecePicker.addButton("Fou", QMessageBox::ActionRole);
     QPushButton *knightButton = piecePicker.addButton("Cavalier", QMessageBox::ActionRole);
@@ -198,7 +198,7 @@ void Erikis::squareClicked(int sq) {
                 this->displayPieces();
                 this->checkWinnerDraw();
 
-                board.makeMove(board.bestMove());
+                board.makeMove(board.bestMoveAlphaBeta());
             }
 
             this->getPossibleMoves();
